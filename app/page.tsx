@@ -9,17 +9,20 @@ type Gift = {
 }
 
 const priorityLabel: Record<string,string> = {
-  must_have: 'Must Have', nice_to_have: 'Nice to Have', dream_gift: 'Dream Gift'
+  must_have: 'Must have', nice_to_have: 'Nice to have', dream_gift: 'Dream gift'
 }
-const priorityColor: Record<string,string> = {
-  must_have: 'bg-pink-100 text-pink-800',
-  nice_to_have: 'bg-blue-100 text-blue-800',
-  dream_gift: 'bg-purple-100 text-purple-800'
+const priorityClass: Record<string,{ bg:string; text:string }> = {
+  must_have: { bg: '#F4C0D1', text: '#72243E' },
+  nice_to_have: { bg: '#B5D4F4', text: '#0C447C' },
+  dream_gift: { bg: '#CECBF6', text: '#3C3489' }
+}
+const categoryIcon: Record<string,string> = {
+  Tech: 'ti-device-laptop', Books: 'ti-book-2', Fashion: 'ti-shirt',
+  Home: 'ti-home', Other: 'ti-gift'
 }
 
 export default function Home() {
   const [gifts, setGifts] = useState<Gift[]>([])
-  const [filtered, setFiltered] = useState<Gift[]>([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState('')
@@ -31,15 +34,15 @@ export default function Home() {
 
   useEffect(() => { fetchGifts(); fetchSettings() }, [])
 
-  useEffect(() => {
-    let list = [...gifts]
-    if (search) list = list.filter(g => g.title.toLowerCase().includes(search.toLowerCase()) || g.brand?.toLowerCase().includes(search.toLowerCase()))
-    if (category) list = list.filter(g => g.category === category)
-    if (sort === 'price-asc') list.sort((a,b) => a.price - b.price)
-    if (sort === 'price-desc') list.sort((a,b) => b.price - a.price)
-    if (sort === 'priority') list.sort((a,b) => ['must_have','nice_to_have','dream_gift'].indexOf(a.priority) - ['must_have','nice_to_have','dream_gift'].indexOf(b.priority))
-    setFiltered(list)
-  }, [gifts, search, category, sort])
+  const filtered = (() => {
+  let list = [...gifts]
+  if (search) list = list.filter(g => g.title.toLowerCase().includes(search.toLowerCase()) || g.brand?.toLowerCase().includes(search.toLowerCase()))
+  if (category) list = list.filter(g => g.category === category)
+  if (sort === 'price-asc') list.sort((a,b) => a.price - b.price)
+  if (sort === 'price-desc') list.sort((a,b) => b.price - a.price)
+  if (sort === 'priority') list.sort((a,b) => ['must_have','nice_to_have','dream_gift'].indexOf(a.priority) - ['must_have','nice_to_have','dream_gift'].indexOf(b.priority))
+  return list
+})()
 
   async function fetchGifts() {
     const { data } = await supabase.from('gifts').select('*, reservations(reserver_name)').order('created_at')
@@ -61,7 +64,7 @@ export default function Home() {
     await supabase.from('reservations').insert({ gift_id: modal.id, reserver_name: form.name, reserver_email: form.email, message: form.message })
     await fetch('/api/notify', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ giftTitle: modal.title, reserverName: form.name }) })
     setModal(null); setForm({ name:'', email:'', message:'' }); setLoading(false)
-    setToast('🎉 Gift reserved! Thank you!'); setTimeout(() => setToast(''), 4000)
+    setToast('Gift reserved! Thank you.'); setTimeout(() => setToast(''), 4000)
     fetchGifts()
   }
 
@@ -69,37 +72,43 @@ export default function Home() {
   const reserved = gifts.filter(g => g.reservations?.length > 0).length
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-pink-100 via-purple-50 to-indigo-100 border-b border-pink-200 py-10 px-4 text-center">
-        <div className="text-5xl mb-3">🎂</div>
-        <h1 className="text-3xl font-medium text-purple-800 mb-2">{settings.registry_title}</h1>
-        {settings.welcome_message && <p className="text-gray-500 mb-4 max-w-md mx-auto">{settings.welcome_message}</p>}
+    <main style={{ minHeight: '100vh', background: 'var(--color-background-primary, #fff)', maxWidth: 1100, margin: '0 auto', padding: '20px 16px 60px' }}>
+
+      <div style={{ background: '#FBEAF0', borderRadius: 20, padding: '36px 24px', textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F4C0D1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+          <i className="ti ti-gift" style={{ fontSize: 26, color: '#72243E' }}></i>
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 500, color: '#72243E', marginBottom: 6 }}>{settings.registry_title}</h1>
+        {settings.welcome_message && <p style={{ fontSize: 14, color: '#993556', marginBottom: 18, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>{settings.welcome_message}</p>}
         {daysUntil !== null && (
-          <div className="inline-flex items-center gap-2 bg-white rounded-xl px-5 py-2 border border-purple-200 text-purple-700 font-medium">
-            🎉 {daysUntil} days to go!
+          <div style={{ display: 'inline-flex', background: 'white', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 22px', textAlign: 'center', borderRight: '0.5px solid #eee' }}>
+              <div style={{ fontSize: 22, fontWeight: 500, color: '#993556' }}>{daysUntil}</div>
+              <div style={{ fontSize: 11, color: '#999' }}>days to go</div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 border-b border-gray-100 bg-white">
-        {[['Total gifts', total, 'text-gray-800'], ['Reserved', reserved, 'text-green-600'], ['Available', total - reserved, 'text-purple-600']].map(([l,n,c]) => (
-          <div key={l as string} className="py-4 text-center border-r last:border-r-0 border-gray-100">
-            <div className={`text-2xl font-medium ${c}`}>{n}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{l}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        {[['Total gifts', total, '#333'], ['Reserved', reserved, '#3B6D11'], ['Still available', total - reserved, '#993556']].map(([l,n,c]) => (
+          <div key={l as string} style={{ background: '#FAF9F6', borderRadius: 14, padding: 14, textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 500, color: c as string }}>{n}</div>
+            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{l}</div>
           </div>
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-2 p-4 bg-white border-b border-gray-100">
-        <input className="flex-1 min-w-[140px] text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="🔍  Search gifts…" value={search} onChange={e => setSearch(e.target.value)} />
-        <select className="text-sm border border-gray-200 rounded-lg px-3 py-2" value={category} onChange={e => setCategory(e.target.value)}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          style={{ flex: 1, minWidth: 140, fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }}
+          placeholder="Search gifts…" value={search} onChange={e => setSearch(e.target.value)}
+        />
+        <select style={{ fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }} value={category} onChange={e => setCategory(e.target.value)}>
           <option value="">All categories</option>
           {['Tech','Books','Fashion','Home','Other'].map(c => <option key={c}>{c}</option>)}
         </select>
-        <select className="text-sm border border-gray-200 rounded-lg px-3 py-2" value={sort} onChange={e => setSort(e.target.value)}>
+        <select style={{ fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }} value={sort} onChange={e => setSort(e.target.value)}>
           <option value="">Sort by</option>
           <option value="price-asc">Price: low → high</option>
           <option value="price-desc">Price: high → low</option>
@@ -107,54 +116,80 @@ export default function Home() {
         </select>
       </div>
 
-      {/* Gift grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}>
         {filtered.map(g => {
           const isReserved = g.reservations?.length > 0
+          const pc = priorityClass[g.priority] || { bg: '#eee', text: '#666' }
           return (
-            <div key={g.id} className={`bg-white rounded-2xl border overflow-hidden transition-all ${isReserved ? 'border-gray-200 opacity-70' : 'border-gray-100 hover:border-purple-200 hover:shadow-md'}`}>
-              {g.image_url
-                ? <img src={g.image_url} alt={g.title} className="w-full h-40 object-cover" />
-                : <div className="w-full h-40 bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-content-center text-5xl items-center justify-center">🎁</div>
-              }
-              <div className="p-4">
-                {g.brand && <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{g.brand}</div>}
-                <div className="font-medium text-sm mb-2 leading-snug">{g.title}</div>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColor[g.priority] || 'bg-gray-100 text-gray-600'}`}>{priorityLabel[g.priority] || g.priority}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{g.category}</span>
-                </div>
-                <div className="text-lg font-medium text-purple-700 mb-3">₹{g.price?.toLocaleString('en-IN') || '—'}</div>
-                {g.product_url && <a href={g.product_url} target="_blank" rel="noopener" className="text-xs text-purple-500 hover:underline block mb-3">View product →</a>}
-                {isReserved
-                  ? <div className="w-full text-center text-sm py-2 rounded-xl bg-gray-50 text-gray-400 border border-gray-100">✓ Reserved by {g.reservations[0].reserver_name}</div>
-                  : <button onClick={() => setModal(g)} className="w-full text-sm py-2 rounded-xl border border-purple-400 text-purple-600 hover:bg-purple-600 hover:text-white transition-all font-medium">Reserve this gift</button>
+            <div key={g.id} style={{ background: '#fff', border: '0.5px solid #eee', borderRadius: 18, overflow: 'hidden', opacity: isReserved ? 0.6 : 1 }}>
+              <div style={{ position: 'relative', height: 140, background: '#FAECE7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 10, padding: '3px 10px', borderRadius: 20, fontWeight: 500, background: pc.bg, color: pc.text }}>
+                  {priorityLabel[g.priority] || g.priority}
+                </span>
+                {g.image_url
+                  ? <img src={g.image_url} alt={g.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <i className={`ti ${categoryIcon[g.category] || 'ti-gift'}`} style={{ fontSize: 36, color: '#D85A30' }}></i>
                 }
+              </div>
+              <div style={{ padding: '12px 14px 14px' }}>
+                {g.brand && <div style={{ fontSize: 10, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{g.brand}</div>}
+                <div style={{ fontSize: 13.5, fontWeight: 500, marginBottom: 8, lineHeight: 1.35 }}>{g.title}</div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: '#993556', marginBottom: 10 }}>₹{g.price?.toLocaleString('en-IN') || '—'}</div>
+                {g.product_url && (
+                  <a href={g.product_url} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#D4537E', display: 'block', marginBottom: 10 }}>
+                    View product <i className="ti ti-external-link" style={{ fontSize: 11 }}></i>
+                  </a>
+                )}
+                {isReserved ? (
+                  <div style={{ width: '100%', fontSize: 12, padding: 9, borderRadius: 12, background: '#f7f7f7', color: '#888', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <i className="ti ti-check" style={{ color: '#639922' }}></i> Reserved by {g.reservations[0].reserver_name}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setModal(g)}
+                    style={{ width: '100%', fontSize: 12.5, padding: 9, borderRadius: 12, border: '0.5px solid #D4537E', color: '#993556', background: 'transparent', cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    Reserve this gift
+                  </button>
+                )}
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Reserve modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-medium text-base mb-1">Reserve: {modal.title}</h3>
-            <p className="text-sm text-gray-400 mb-4">Let the birthday person know you're on it!</p>
-            <input className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Your name *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-            <input className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Email (optional)" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
-            <textarea className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-4 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-purple-300" placeholder="Leave a message (optional)" value={form.message} onChange={e => setForm({...form, message: e.target.value})} />
-            <div className="flex gap-2">
-              <button onClick={() => setModal(null)} className="flex-1 py-2 text-sm rounded-xl border border-gray-200 text-gray-500">Cancel</button>
-              <button onClick={reserve} disabled={loading || !form.name.trim()} className="flex-1 py-2 text-sm rounded-xl bg-purple-600 text-white font-medium disabled:opacity-50">{loading ? 'Reserving…' : 'Reserve gift 🎁'}</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 24, width: '100%', maxWidth: 380 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>Reserve: {modal.title}</h3>
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Let them know you&apos;re on it!</p>
+            <input
+              style={{ width: '100%', fontSize: 13, border: '0.5px solid #ddd', borderRadius: 12, padding: '9px 12px', marginBottom: 10 }}
+              placeholder="Your name *" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+            />
+            <input
+              style={{ width: '100%', fontSize: 13, border: '0.5px solid #ddd', borderRadius: 12, padding: '9px 12px', marginBottom: 10 }}
+              placeholder="Email (optional)" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+            />
+            <textarea
+              style={{ width: '100%', fontSize: 13, border: '0.5px solid #ddd', borderRadius: 12, padding: '9px 12px', marginBottom: 16, height: 80, resize: 'none' }}
+              placeholder="Leave a message (optional)" value={form.message} onChange={e => setForm({...form, message: e.target.value})}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setModal(null)} style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', background: 'transparent', color: '#888' }}>Cancel</button>
+              <button onClick={reserve} disabled={loading || !form.name.trim()} style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 12, border: 'none', background: '#D4537E', color: '#fff', fontWeight: 500, opacity: loading || !form.name.trim() ? 0.5 : 1 }}>
+                {loading ? 'Reserving…' : 'Reserve gift'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Toast */}
-      {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-600 text-white text-sm px-5 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#3B6D11', color: '#fff', fontSize: 13, padding: '10px 20px', borderRadius: 12, zIndex: 50 }}>
+          {toast}
+        </div>
+      )}
     </main>
   )
 }
