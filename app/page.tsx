@@ -102,18 +102,18 @@ export default function Home() {
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <input
-            style={{ flex: 1, minWidth: 140, fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }}
+            style={{ flex: 1, minWidth: 140, fontSize: 13, borderRadius: 12, border: '1.5px solid #000', padding: '9px 14px', color: '#000', background: '#fff' }}
             placeholder="Search gifts…" value={search} onChange={e => setSearch(e.target.value)}
           />
-          <select style={{ fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }} value={category} onChange={e => setCategory(e.target.value)}>
+          <select style={{ fontSize: 13, borderRadius: 12, border: '1.5px solid #000', padding: '9px 14px', color: '#000', background: '#fff' }} value={category} onChange={e => setCategory(e.target.value)}>
             <option value="">All categories</option>
-            {['Tech','Books','Fashion','Home','Other'].map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select style={{ fontSize: 13, borderRadius: 12, border: '0.5px solid #ddd', padding: '9px 14px' }} value={sort} onChange={e => setSort(e.target.value)}>
-            <option value="">Sort by</option>
-            <option value="price-asc">Price: low → high</option>
-            <option value="price-desc">Price: high → low</option>
-            <option value="priority">Priority</option>
+             {['Tech','Books','Fashion','Home','Other'].map(c => <option key={c}>{c}</option>)}
+            </select>
+            <select style={{ fontSize: 13, borderRadius: 12, border: '1.5px solid #000', padding: '9px 14px', color: '#000', background: '#fff' }} value={sort} onChange={e => setSort(e.target.value)}>
+              <option value="">Sort by</option>
+              <option value="price-asc">Price: low → high</option>
+              <option value="price-desc">Price: high → low</option>
+              <option value="priority">Priority</option>
           </select>
         </div>
 
